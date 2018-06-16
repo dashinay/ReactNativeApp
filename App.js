@@ -1,12 +1,14 @@
 import React from 'react';
-import { AppRegistry, FlatList, ActivityIndicator, StyleSheet, Button, View, Text } from 'react-native';
+import { Image, AppRegistry, FlatList, ActivityIndicator, StyleSheet, Button, View, Text } from 'react-native';
 import { createStackNavigator } from 'react-navigation';
 
 class HomeScreen extends React.Component {
+	static navigationOptions = {
+    title: 'React Native App',
+  };
   render() {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Text>React Native App</Text>
         <Button
           title="Go to Cameras"
           onPress={() => this.props.navigation.navigate('Cameras')}
@@ -27,17 +29,32 @@ class Cameras extends React.Component {
   }
 
   componentDidMount(){
-    return fetch('https://facebook.github.io/react-native/movies.json')
+    return fetch('https://web6.seattle.gov/Travelers/api/Map/Data?zoomId=17&type=2')
       .then((response) => response.json())
       .then((responseJson) => {
-
+		var output = {cameras: []};
         this.setState({
           isLoading: false,
-          dataSource: responseJson.movies,
+          dataSource: responseJson.Features,
+		  dataDisplay: output
         }, function(){
-
+			var data = this.state.dataSource;
+			for(var feature in data){
+				
+				var cameras = data[feature].Cameras;
+				for(var camera in cameras){
+					var url = "";
+					if(cameras[camera].Type == ('sdot')){
+						url = 'http://www.seattle.gov/trafficcams/images/' + cameras[camera].ImageUrl;
+					}
+					else{
+						url = 'http://images.wsdot.wa.gov/nw/' + cameras[camera].ImageUrl;
+					}
+					console.log(cameras[camera]);
+					this.state.dataDisplay.cameras.push({description: cameras[camera].Description, url: url});
+				}
+			}
         });
-
       })
       .catch((error) =>{
         console.error(error);
@@ -53,10 +70,17 @@ class Cameras extends React.Component {
     }
 
     return(
-      <View style={{flex: 1, paddingTop:20}}>
+      <View style={{flex: 1, paddingTop:1}}>
         <FlatList
-          data={this.state.dataSource}
-          renderItem={({item}) => <Text>{item.title}, {item.releaseYear}</Text>}
+          data={this.state.dataDisplay.cameras}
+          renderItem={({item}) => 
+		  <View style = {{flex:1, flexDirection: 'row'}}>
+		  <Image source = {{ uri: item.url }} style={{width: '50%',
+														height: 120 ,
+														margin: 6}} />
+		  <Text style={{width:'50%', 
+						textAlignVertical:'center', padding: 6}}>{item.description}</Text>
+		  </View>}
           keyExtractor={(item, index) => index}
         />
       </View>
